@@ -38,7 +38,7 @@ def exact_likelihood(env, context, z_seq, m_seq, act_seq, policy):
 
         # observation update only if m=1
         if m == 1:
-            sigma_obs = env._obs_sigma(mu_pred)
+            sigma_obs = env.obs_sigma(mu_pred)
             S = Sigma_pred + sigma_obs ** 2
 
             ll = (1.0 / math.sqrt(2 * math.pi * S)) * math.exp(-(z - mu_pred) ** 2 / (2 * S))

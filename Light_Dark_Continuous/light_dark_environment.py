@@ -24,8 +24,8 @@ class ContinuousLightDarkPOMDP:
     def __init__(self,
                  step_size=1.0,
                  process_noise=0.1,
-                 light_noise=0.2,
-                 dark_noise=4.0):
+                 light_noise=1,
+                 dark_noise=16.0):
         # -------------------------------
         # CONTEXTS
         # -------------------------------
@@ -54,8 +54,8 @@ class ContinuousLightDarkPOMDP:
         # INITIAL DISTRIBUTIONS
         # -------------------------------
         self.initial_dist = {
-            0: (1.0, 0.01),    # mean, variance
-            1: (-1.0, 0.01),
+            0: (0.0, 0.09),  # mean, variance
+            1: (0.0, 0.09),
         }
 
         # -------------------------------
@@ -63,22 +63,22 @@ class ContinuousLightDarkPOMDP:
         # -------------------------------
         self.reward_func = {
             0: {  # context 0
-                "goal_mu": 4.0,
-                "goal_band": 1,
-                "reward": 3,
+                "goal_high": 1000,
+                "goal_low": 1,
+                "reward": 1,
 
-                "det_mu": -3.0,
-                "det_band": 1,
-                "penalty": -2
+                "det_high": 0,
+                "det_low": -1000,
+                "penalty": -1.3
             },
             1: {  # context 1
-                "goal_mu": -4.0,
-                "goal_band": 1,
-                "reward": 3,
+                "goal_high": -1,
+                "goal_low": -1000,
+                "reward": 1,
 
-                "det_mu": 3.0,
-                "det_band": 1,
-                "penalty": -2
+                "det_high": 1000,
+                "det_low": 0,
+                "penalty": -1.3
             }
         }
 
@@ -99,7 +99,7 @@ class ContinuousLightDarkPOMDP:
     # =========================================================
     # STATE TRANSITION
     # =========================================================
-    def next_state_sampler(self, x, action, context):
+    def next_state_sampler(self, x, action):
         """
         Continuous motion model:
           x' = x + step_direction + Gaussian(process_noise)
@@ -117,7 +117,7 @@ class ContinuousLightDarkPOMDP:
     # =========================================================
     # OBSERVATION NOISE (LIGHT–DARK by CONTEXT)
     # =========================================================
-    def _obs_sigma(self, x, context):
+    def obs_sigma(self, x, context):
         """
         Context 0:
             light region = x > 0
@@ -150,8 +150,8 @@ class ContinuousLightDarkPOMDP:
         if action in ['l', 'r']:
             return None
 
-        sigma = self._obs_sigma(x, context)
-        return float(np.random.normal(x, sigma))
+        sigma = self.obs_sigma(x, context)
+        return float(np.random.normal(x, np.sqrt(sigma)))
 
     # =========================================================
     # REWARD FUNCTION
@@ -160,12 +160,12 @@ class ContinuousLightDarkPOMDP:
         R = self.reward_func[context]
 
         # goal region
-        if abs(x - R["goal_mu"]) <= R["goal_band"]:
+        if (x > R["goal_low"]) and (x < R["goal_high"]):
             return R["reward"]
 
         # detector region
-        if abs(x - R["det_mu"]) <= R["det_band"]:
-            return random.choice([R["penalty"], 0])
+        if (x > R["det_low"]) and (x < R["det_high"]):
+            return R["penalty"]
 
         return 0
 
@@ -179,7 +179,7 @@ class ContinuousLightDarkPOMDP:
             - observation
             - reward
         """
-        x_next = self.next_state_sampler(x, action, context)
+        x_next = self.next_state_sampler(x, action)
         obs = self.observation_sampler(x_next, action, context)
         rw = self.reward_sampler(x_next, context)
         return x_next, obs, rw

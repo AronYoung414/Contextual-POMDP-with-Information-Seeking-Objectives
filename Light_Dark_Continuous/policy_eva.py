@@ -4,7 +4,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import torch
 import pickle
-from VPG_MG import VariationalPolicyGradient
+from VPG_EKF import VariationalPolicyGradientExact
 from light_dark_environment import ContinuousLightDarkPOMDP
 from policy_continuous import ContinuousPolicyNetworkMasked  # <-- make sure this file exists
 
@@ -66,11 +66,11 @@ def plot_trajectory(x_seq, z_seq, m_seq, act_seq, context,
 
     # observations
     z_plot = [z if m == 1 else np.nan for z, m in zip(z_seq, m_seq)]
-    plt.scatter(range(T), z_plot, color='red', marker='x', s=60, label="Observations z_t")
+    plt.scatter(range(T-1), z_plot, color='red', marker='x', s=60, label="Observations z_t")
 
     # action text
     for t, a in enumerate(act_seq):
-        plt.text(t, x_seq[t] + 0.2, a, ha='center', va='bottom', fontsize=10)
+        plt.text(t, x_seq[t+1] + 0.2, a, ha='center', va='bottom', fontsize=10)
 
     plt.title(f"{title} (Context={context})")
     plt.xlabel("Time step t")
@@ -96,7 +96,7 @@ def evaluate_policy(policy_net,
     Evaluate a learned policy using exact likelihood.
     """
 
-    vpg = VariationalPolicyGradientExactMG(env, policy_net, tau=1.0, horizon=horizon)
+    vpg = VariationalPolicyGradientExact(env, policy_net, tau=1.0, horizon=horizon)
 
     np.random.seed(seed)
     env.seed(seed)
@@ -116,6 +116,8 @@ def evaluate_policy(policy_net,
         act_seq = []
         reward = 0.0
         obs_history = []
+
+        x_seq.append(x)
 
         # ---- rollout ----
         for t in range(horizon):
@@ -147,8 +149,8 @@ def evaluate_policy(policy_net,
             act_seq.append(a)
 
         # ---- likelihood evaluation ----
-        P_y, logP_y = vpg.P_and_logP_y(z_seq, m_seq, act_seq)
-        H = vpg.entropy_C_given_y(z_seq, m_seq, act_seq)
+        logP_y = vpg.P_and_logP_y(z_seq, m_seq, act_seq)
+        H = vpg.entropy_C_given_y(z_seq, m_seq, act_seq, m=0)
 
         returns.append(reward)
         entropies.append(H)
@@ -165,6 +167,8 @@ def evaluate_policy(policy_net,
             "logP_y": logP_y,
             "entropy": H
         })
+
+        # print(context)
 
         print(f"[{k + 1}/{num_trajs}]  R={reward:.3f}, H={H:.3f}, "
               f"V={reward - H:.3f}, logP={logP_y:.3f}")
@@ -208,7 +212,7 @@ if __name__ == "__main__":
     env = ContinuousLightDarkPOMDP()
 
     # Change as needed
-    policy_path = "data_mg/exp_3_longHorizon/Values/policy_net_continuous.pkl"
+    policy_path = "data_ekf/exp_17_highDarkVar/Values/policy_net_continuous.pkl"
 
     # The observation dimension = 2 ([z, m])
     # The number of actions = len(env.actions)
@@ -224,7 +228,7 @@ if __name__ == "__main__":
         horizon=20,
         num_trajs=50,
         show_num=50,
-        seed=0,
+        seed=42,
         save_path="evaluation_results.pkl",
         plot_one=True  # set to False to disable plotting
     )

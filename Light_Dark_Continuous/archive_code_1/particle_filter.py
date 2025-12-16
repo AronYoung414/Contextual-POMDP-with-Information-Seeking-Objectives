@@ -108,7 +108,7 @@ class ParticleFilter:
             if m == 1 and a == 'o':
                 # multiply weights by likelihood
                 for i, x in enumerate(particles):
-                    sigma = self.env._obs_sigma(x)
+                    sigma = self.env.obs_sigma(x)
                     weights[i] *= gaussian_likelihood(z, x, sigma)
 
                 # normalizing constant

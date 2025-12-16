@@ -21,13 +21,13 @@ def main(save_dir):
     # -------------------------------------------------------
     # 0. Settings
     # -------------------------------------------------------
-    seed = 42
+    seed = 1337
     set_random_seeds(seed)
 
-    tau = 1  # temperature
-    horizon = 10  # T
+    tau = 0.2  # temperature
+    horizon = 20  # T
     M = 200  # trajectories per iteration
-    iterations = 1000
+    iterations = 10000
     lr = 0.001  # learning rate
     # num_particles = 2000  # PF particles
 
@@ -148,4 +148,4 @@ def main(save_dir):
 
 
 if __name__ == "__main__":
-    main(save_dir="data_ekf/exp_4")
+    main(save_dir="data_ekf/exp_17_highDarkVar")

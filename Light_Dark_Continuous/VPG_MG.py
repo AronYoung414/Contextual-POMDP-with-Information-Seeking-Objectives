@@ -242,6 +242,7 @@ class VariationalPolicyGradient:
 
         Z = sum(unnorm)
         post = [u / Z for u in unnorm]
+        print(post)
 
         H = 0.0
         for p in post:
@@ -312,7 +313,11 @@ class VariationalPolicyGradient:
         accumulated = None
 
         for _ in range(M):
-            _, z_seq, m_seq, a_seq, reward = self.sample_trajectory()
+            c, z_seq, m_seq, a_seq, reward = self.sample_trajectory()
+            print(c)
+            print(z_seq)
+            print(m_seq)
+            print(a_seq)
 
             P, logP = self.P_and_logP(z_seq, m_seq, a_seq)
             H = self.entropy(z_seq, m_seq, a_seq, P)
