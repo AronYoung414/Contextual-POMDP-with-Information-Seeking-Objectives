@@ -1,4 +1,5 @@
 import matplotlib
+
 matplotlib.use("TkAgg")
 import matplotlib.pyplot as plt
 import numpy as np
@@ -7,6 +8,48 @@ import pickle
 from VPG_EKF import VariationalPolicyGradientExact
 from light_dark_environment import ContinuousLightDarkPOMDP
 from policy_continuous import ContinuousPolicyNetworkMasked  # <-- make sure this file exists
+
+
+# def evaluate_blackbox_policy(
+#     policy,
+#     env,
+#     horizon=20,
+#     num_trajs=50,
+#     seed=0,
+# ):
+#     """
+#     Evaluate a non-neural policy (e.g., POMCP)
+#     """
+#     np.random.seed(seed)
+#     env.seed(seed)
+#
+#     returns = []
+#
+#     for k in range(num_trajs):
+#         policy.reset()
+#
+#         context = np.random.choice(env.contexts)
+#         x = env.sample_initial_state(context)
+#
+#         obs = None
+#         total_reward = 0.0
+#
+#         for t in range(horizon):
+#             a = policy.act(obs)
+#             x, z, r = env.step(x, a, context)
+#
+#             total_reward += r
+#             obs = z
+#
+#         returns.append(total_reward)
+#
+#         print(f"[{k+1}/{num_trajs}] Return = {total_reward:.3f}")
+#
+#     return {
+#         "avg_return": float(np.mean(returns)),
+#         "std_return": float(np.std(returns)),
+#         "num_trajs": num_trajs,
+#     }
 
 
 # ======================================================================
@@ -45,32 +88,46 @@ def plot_trajectory(x_seq, z_seq, m_seq, act_seq, context,
 
     T = len(x_seq)
 
+    plt.figure(figsize=(10, 5))
+
     # Determine light/dark region boundaries
     if context == 0:
         # light if x > 0
         light_region = (0, max(x_seq) + 1)
         dark_region = (min(x_seq) - 1, 0)
+        plt.ylim(-5, max(x_seq) + 1)
     else:
         # light if x < 0
         light_region = (min(x_seq) - 1, 0)
         dark_region = (0, max(x_seq) + 1)
+        plt.ylim(min(x_seq) - 1, 5)
 
-    plt.figure(figsize=(10, 5))
+    plt.rcParams.update({
+        "font.size": 16,  # base text
+        "axes.labelsize": 20,  # x/y labels
+        "axes.titlesize": 16,  # figure titles
+        "legend.fontsize": 15,
+        "xtick.labelsize": 20,
+        "ytick.labelsize": 20,
+        "lines.linewidth": 2.5,
+        "pdf.fonttype": 42,
+        "ps.fonttype": 42,
+    })
 
     # background regions
     plt.axhspan(light_region[0], light_region[1], color=light_color, alpha=0.25)
     plt.axhspan(dark_region[0], dark_region[1], color=dark_color, alpha=0.25)
 
     # true state path
-    plt.plot(range(T), x_seq, '-o', color='blue', label="True state x_t")
+    plt.plot(range(T), x_seq, '-o', color='blue', label="True state s_t")
 
     # observations
     z_plot = [z if m == 1 else np.nan for z, m in zip(z_seq, m_seq)]
-    plt.scatter(range(T-1), z_plot, color='red', marker='x', s=60, label="Observations z_t")
+    plt.scatter(range(T - 1), z_plot, color='red', marker='x', s=60, label="Observations o_t")
 
     # action text
     for t, a in enumerate(act_seq):
-        plt.text(t, x_seq[t+1] + 0.2, a, ha='center', va='bottom', fontsize=10)
+        plt.text(t, x_seq[t + 1] + 0.2, a, ha='center', va='bottom', fontsize=10)
 
     plt.title(f"{title} (Context={context})")
     plt.xlabel("Time step t")
@@ -212,7 +269,7 @@ if __name__ == "__main__":
     env = ContinuousLightDarkPOMDP()
 
     # Change as needed
-    policy_path = "data_ekf/exp_17_highDarkVar/Values/policy_net_continuous.pkl"
+    policy_path = "data_ekf/exp_21_mediumVarRatio/Values/policy_net_continuous.pkl"
 
     # The observation dimension = 2 ([z, m])
     # The number of actions = len(env.actions)

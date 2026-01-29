@@ -25,7 +25,7 @@ class ContinuousLightDarkPOMDP:
                  step_size=1.0,
                  process_noise=0.1,
                  light_noise=1,
-                 dark_noise=16.0):
+                 dark_noise=8.0):
         # -------------------------------
         # CONTEXTS
         # -------------------------------
